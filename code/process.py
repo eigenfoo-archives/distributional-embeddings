@@ -7,7 +7,9 @@ def process_text(text_file,pickle_name,THRESH):
     count = 0
     with open(text_file, "r") as text: 
         for line in text:
-            for word in line.split(): 
+            words = line.replace(".","").split()
+            #print(words)
+            for word in words: 
                 if word in word_dict:
                     frequency_dict[word] +=1
                 else: 
