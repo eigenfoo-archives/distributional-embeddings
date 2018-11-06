@@ -1,10 +1,7 @@
-#Usage
-
-
 
 ## Preprocess script
 This script takes in a data file and saves a pickle with the token dictionary.
-It also filters out words below a certain threshold. :x
+It also filters out words below a certain threshold. 
 
 Usage: 
 ```
