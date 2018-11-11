@@ -16,6 +16,7 @@ except IndexError:
     print('\nUsage:\n\tpython gaussian.py VOCAB_SIZE EMBED_DIM NUM_EPOCHS\n')
     sys.exit()
 
+'''
 # Point Tensorflow to data file
 filenames = ['../data/data.txt']
 dataset = tf.data.Dataset.from_tensor_slices(filenames)
@@ -30,6 +31,7 @@ dataset = dataset.flat_map(
 dataset = dataset.batch(1).repeat(NUM_EPOCHS)
 iterator = dataset.make_one_shot_iterator()
 next_line = iterator.get_next()  # Usage: sess.run(next_line)
+'''
 
 # Initialize embeddings
 mu = tf.get_variable('mu', [VOCAB_SIZE, EMBED_DIM],
