@@ -25,14 +25,14 @@ def process_text(text_file, pickle_name, thresh):
             # Replace multiple periods (e.g. ellipsis) with spaces.
             words = re.sub(r"\.+", " ", line).split()
             for word in words:
-                if word in word_dict:
+                if word in frequency_dict:
                     frequency_dict[word] += 1
                 else:
-                    word_dict[word] = count
-                    count += 1
                     frequency_dict[word] = 1
-    word_dict = {word: word_dict[word]
-                 for word in word_dict if frequency_dict[word] > thresh}
+    for word in frequency_dict:
+        if frequency_dict[word]>thresh:
+            word_dict[word] = count
+            count+=1
     pickle.dump(word_dict, open(pickle_name, "wb"))
 
 
