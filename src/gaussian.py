@@ -98,6 +98,6 @@ while True:
 
     # TODO (George) write training code
 
-    # Regularization means and covariance eigenvalues
+    # Regularize means and covariance eigenvalues
     mu = tf.clip_by_norm(mu, CLIP_NORM)
     sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
