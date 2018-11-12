@@ -16,9 +16,13 @@ try:
     CONTEXT_SIZE = int(sys.argv[3])  # Same as number of negative samples!
     MARGIN = float(sys.argv[4])
     NUM_EPOCHS = int(sys.argv[5])
+    CLIP_NORM = float(sys.argv[6])
+    MINIMUM = float(sys.argv[7])
+    MAXIMUM = float(sys.argv[8])
 except IndexError:
-    print('''\nUsage:\n\tpython gaussian.py VOCAB_SIZE EMBED_DIM
-             CONTEXT_SIZE MARGIN NUM_EPOCHS\n''')
+    msg = ('\nUsage:\n\tpython gaussian.py VOCAB_SIZE EMBED_DIM '
+           'CONTEXT_SIZE MARGIN NUM_EPOCHS CLIP_NORM MINIMUM MAXIMUM\n')
+    print(msg)
     sys.exit()
 
 
@@ -94,5 +98,6 @@ while True:
 
     # TODO (George) write training code
 
-    # TODO (George) write regularization code (e.g. eigenvalues of covariance
-    # matrix)
+    # Regularization means and covariance eigenvalues
+    mu = tf.clip_by_norm(mu, CLIP_NORM)
+    sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
