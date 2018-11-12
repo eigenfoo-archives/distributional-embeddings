@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-import data_builder
+import data_builder  # FIXME (Jonny) tf.data replaces data_builder
 
 
 try:
@@ -22,6 +22,7 @@ except IndexError:
     sys.exit()
 
 
+# FIXME (George) check that this is correct
 def expected_likelihood(mu1, sigma1, mu2, sigma2):
     '''
     Evaluates expected likelihood between two Gaussians.
@@ -46,8 +47,8 @@ dataset = dataset.batch(1).repeat(NUM_EPOCHS)
 iterator = dataset.make_one_shot_iterator()
 next_line = iterator.get_next()  # Usage: sess.run(next_line)
 
-# FIXME need to make data stuff
-# data = data_builder.Data()
+# TODO (Jonny) check that tf.data code works
+# TODO (Jonny) do not use data builder, but we need the word_dict.
 
 center_id = tf.placeholder(tf.int32, [])
 context_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
@@ -67,13 +68,12 @@ context_sigmas = tf.nn.embedding_lookup(sigma, context_ids)
 negative_mus = tf.nn.embedding_lookup(mu, negative_ids)
 negative_sigmas = tf.nn.embedding_lookup(sigma, negative_ids)
 
-# TODO Compute similarity here.
-# foo = tf.map_fn(lambda )
-
-loss = tf.maximum(0.0,
-                  MARGIN
-                  - expected_likelihood()
-                  + expected_likelihood())
+# TODO (George) compute similarity and loss here.
+# foo = tf.map_fn(lambda)
+# loss = tf.maximum(0.0,
+#                   MARGIN
+#                   - expected_likelihood()
+#                   + expected_likelihood())
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -85,10 +85,11 @@ while True:
         print('End of dataset.')
         break
 
-    # FIXME need to figure this out with Jonny. There are two parts to this:
-    # getting the samples, and then converting them to unique integer ids.
+    # TODO (Jonny) need a function to get center, context and negative ids.
+    # next_sample may take whatever arguments needed.
     center_id, context_ids, negative_ids = next_sample()
 
-    # TODO Train
+    # TODO (George) write training code
 
-    # TODO Regularize (e.g. eigenvalues of covariance matrix)
+    # TODO (George) write regularization code (e.g. eigenvalues of covariance
+    # matrix)
