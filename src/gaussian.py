@@ -55,7 +55,7 @@ next_line = iterator.get_next()  # Usage: sess.run(next_line)
 
 center_id = tf.placeholder(tf.int32, [])
 context_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
-negative_ids = tf.placeholder(tf.int32, [NEGATIVE_SIZE])
+negative_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
 
 # Initialize embeddings
 mu = tf.get_variable('mu', [VOCAB_SIZE, EMBED_DIM],
