@@ -22,14 +22,17 @@ except IndexError:
     sys.exit()
 
 
-# FIXME (George) check that this is correct
 def expected_likelihood(mu1, sigma1, mu2, sigma2):
     '''
-    Evaluates expected likelihood between two Gaussians.
+    Evaluates expected likelihood between two Gaussians. All parameters are
+    expected to be tf.Tensors with shape [D,].
+    - Determinant of a diagonal matrix is the product of entries.
+    - Quadratic form tf.transpose(x)*A*x with a diagonal A is
+      tf.reduce_sum(tf.multiply(tf.diag(A), x**2))
     '''
     const = 1 / ((2*np.pi)**EMBED_DIM * tf.reduce_prod(sigma1+sigma2))
-    exp = tf.exp(-0.5 * tf.reduce_sum(tf.multiply(sigma1+sigma2, (mu1-mu2)**2)))
-    return const * exp
+    quad_form = tf.reduce_sum(tf.multiply(sigma1 + sigma2, (mu1 - mu2)**2))
+    return const * tf.exp(-0.5 * quad_form)
 
 
 # Point Tensorflow to data file
