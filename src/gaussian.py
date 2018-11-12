@@ -95,8 +95,8 @@ train_step = tf.train.AdamOptimizer().minimize(loss)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+iteration = 0
 
-# TODO (George) add tqdm somehow
 while True:
     try:
         line = sess.run(next_line)
@@ -116,6 +116,11 @@ while True:
     # Regularize means and covariance eigenvalues
     mu = tf.clip_by_norm(mu, CLIP_NORM)
     sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
+
+    # Increment iteration, print if necessary
+    iteration += 1
+    if iteration % 1000 == 0:
+        print('Iteration: {}'.format(iteration))
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
