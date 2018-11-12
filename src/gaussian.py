@@ -68,6 +68,7 @@ sigma = tf.get_variable('sigma', [VOCAB_SIZE, EMBED_DIM],
                         tf.float32, tf.ones_initializer)
 
 # Look up embeddings
+# FIXME (George) is there a better way of doing this?
 center_mu = tf.nn.embedding_lookup(mu, center_id)
 center_sigma = tf.nn.embedding_lookup(sigma, center_id)
 context_mus = tf.nn.embedding_lookup(mu, context_ids)
@@ -105,3 +106,5 @@ while True:
     # Regularize means and covariance eigenvalues
     mu = tf.clip_by_norm(mu, CLIP_NORM)
     sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
+
+# TODO (George) add post-training logic.
