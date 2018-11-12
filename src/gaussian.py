@@ -96,6 +96,7 @@ train_step = tf.train.AdamOptimizer().minimize(loss)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
+# TODO (George) add tqdm somehow
 while True:
     try:
         line = sess.run(next_line)
@@ -116,4 +117,8 @@ while True:
     mu = tf.clip_by_norm(mu, CLIP_NORM)
     sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
 
-# TODO (George) add post-training logic.
+# Save embedding parameters as .npy files
+mu_np = mu.eval(session=sess)
+sigma_np = sigma.eval(session=sess)
+np.save('mu.npy', mu_np)
+np.save('sigma.npy', sigma_np)
