@@ -7,7 +7,7 @@ def process_text(text_file, pickle_name, thresh):
     '''
     Dumps pickle of word_dict, whose key is a token (string), and whose
     value is the integer id.
-    
+
     Parameters
     ----------
     text_file : str
