@@ -81,6 +81,7 @@ negative_sigmas = tf.nn.embedding_lookup(sigma, negative_ids)
 #                   MARGIN
 #                   - expected_likelihood()
 #                   + expected_likelihood())
+train_step = tf.train.AdamOptimizer().minimize(loss)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -94,9 +95,12 @@ while True:
 
     # TODO (Jonny) need a function to get center, context and negative ids.
     # next_sample may take whatever arguments needed.
-    center_id, context_ids, negative_ids = next_sample()
+    center_id_, context_ids_, negative_ids_ = next_sample()
 
-    # TODO (George) write training code
+    # Train
+    sess.run(train_step, feed_dict={center_id: center_id_,
+                                    context_ids: context_ids_,
+                                    negative_ids: negative_ids_})
 
     # Regularize means and covariance eigenvalues
     mu = tf.clip_by_norm(mu, CLIP_NORM)
