@@ -34,9 +34,9 @@ def expected_likelihood(mu1, sigma1, mu2, sigma2):
     - Quadratic form tf.transpose(x)*A*x with a diagonal A is
       tf.reduce_sum(tf.multiply(tf.diag(A), x**2))
     '''
-    const = 1 / ((2*np.pi)**EMBED_DIM * tf.reduce_prod(sigma1+sigma2))
+    coeff = 1 / ((2*np.pi)**EMBED_DIM * tf.reduce_prod(sigma1 + sigma2))
     quad_form = tf.reduce_sum(tf.multiply(sigma1 + sigma2, (mu1 - mu2)**2))
-    return const * tf.exp(-0.5 * quad_form)
+    return coeff * tf.exp(-0.5 * quad_form)
 
 
 # Point Tensorflow to data file
@@ -76,12 +76,21 @@ context_sigmas = tf.nn.embedding_lookup(sigma, context_ids)
 negative_mus = tf.nn.embedding_lookup(mu, negative_ids)
 negative_sigmas = tf.nn.embedding_lookup(sigma, negative_ids)
 
-# TODO (George) compute similarity and loss here.
-# foo = tf.map_fn(lambda)
-# loss = tf.maximum(0.0,
-#                   MARGIN
-#                   - expected_likelihood()
-#                   + expected_likelihood())
+# Source: https://stackoverflow.com/a/40543116/10514795
+context_parameters = (context_mus, context_sigmas)
+negative_parameters = (negative_mus, negative_sigmas)
+positive_energy = tf.map_fn(
+    lambda params: expected_likelihood(center_mu, center_sigma,
+                                       params[0], params[1]),
+    context_parameters)  # [CONTEXT_SIZE, ]
+negative_energy = tf.map_fn(
+    lambda params: expected_likelihood(center_mu, center_sigma,
+                                       params[0], params[1]),
+    negative_parameters)  # [CONTEXT_SIZE, ]
+
+max_margins = tf.maximum(0.0, MARGIN - positive_energy + negative_energy)
+loss = tf.reduce_mean(max_margins)
+
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
 sess = tf.Session()
