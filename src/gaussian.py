@@ -3,68 +3,43 @@ Implementation of Word Representations via Gaussian Embedding.
     https://arxiv.org/abs/1412.6623
 '''
 
-import sys
+import argparse
 import numpy as np
 import tensorflow as tf
+from ast import literal_eval
 from tqdm import tqdm
-import data_builder  # FIXME (Jonny) tf.data replaces data_builder
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Train Gaussian embeddings.')
 
-try:
-    VOCAB_SIZE = int(sys.argv[1])
-    EMBED_DIM = int(sys.argv[2])
-    CONTEXT_SIZE = int(sys.argv[3])  # Same as number of negative samples!
-    MARGIN = float(sys.argv[4])
-    NUM_EPOCHS = int(sys.argv[5])
-    CLIP_NORM = float(sys.argv[6])
-    MINIMUM = float(sys.argv[7])
-    MAXIMUM = float(sys.argv[8])
-except IndexError:
-    msg = ('\nUsage:\n\tpython gaussian.py VOCAB_SIZE EMBED_DIM '
-           'CONTEXT_SIZE MARGIN NUM_EPOCHS CLIP_NORM MINIMUM MAXIMUM\n')
-    print(msg)
-    sys.exit()
+parser.add_argument('data_file', type=str,
+                    help='Name of data file.')
+parser.add_argument('vocab_size', type=int,
+                    help='Number of unique tokens in the vocabulary.')
+parser.add_argument('embed_dim', type=int,
+                    help='Dimensionality of the embedding space.')
+parser.add_argument('margin', type=float, nargs='?', default=1.0,
+                    help='Margin in max-margin loss. Defaults to 1.')
+parser.add_argument('num_epochs', type=int, nargs='?', default=1,
+                    help='Number of epochs. Defaults to 1.')
+parser.add_argument('C', type=float, nargs='?', default=20.0,
+                    help='Maximum L2 norm of mu. Defaults to 20.')
+parser.add_argument('m', type=float, nargs='?', default=1e-3,
+                    help='Minimum covariance eigenvalue. Defaults to 1e-3.')
+parser.add_argument('M', type=float, nargs='?', default=1e3,
+                    help='Maximum covariance eigenvalue. Defaults to 1e3.')
 
+args = parser.parse_args()
 
-def expected_likelihood(mu1, sigma1, mu2, sigma2):
-    '''
-    Evaluates expected likelihood between two Gaussians. All parameters are
-    expected to be tf.Tensors with shape [D,].
-    - Determinant of a diagonal matrix is the product of entries.
-    - Quadratic form tf.transpose(x)*A*x with a diagonal A is
-      tf.reduce_sum(tf.multiply(tf.diag(A), x**2))
-    '''
-    coeff = 1 / ((2*np.pi)**EMBED_DIM * tf.reduce_prod(sigma1 + sigma2))
-    quad_form = tf.reduce_sum(tf.multiply(sigma1 + sigma2, (mu1 - mu2)**2))
-    return coeff * tf.exp(-0.5 * quad_form)
-
-
-# Point Tensorflow to data file
-filenames = ['../data/data.txt']
-dataset = tf.data.Dataset.from_tensor_slices(filenames)
-
-# Filter out empty lines
-dataset = dataset.flat_map(
-    lambda filename: (tf.data.TextLineDataset(filename)
-                        .filter(lambda line: tf.not_equal(line, '')))
-    )
-
-# Batch size of line 1 each. Repeat as many times as we have epochs.
-dataset = dataset.batch(1).repeat(NUM_EPOCHS)
-iterator = dataset.make_one_shot_iterator()
-next_line = iterator.get_next()  # Usage: sess.run(next_line)
-
-# TODO (Jonny) check that tf.data code works
-# TODO (Jonny) do not use data builder, but we need the word_dict.
-
+# FIXME (George) ensure that context_ids and negative_ids have the same shape
 center_id = tf.placeholder(tf.int32, [])
-context_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
-negative_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
+context_ids = tf.placeholder(tf.int32, [None])
+negative_ids = tf.placeholder(tf.int32, [None])
 
 # Initialize embeddings
-mu = tf.get_variable('mu', [VOCAB_SIZE, EMBED_DIM],
+mu = tf.get_variable('mu', [args.vocab_size, args.embed_dim],
                      tf.float32, tf.random_normal_initializer)
-sigma = tf.get_variable('sigma', [VOCAB_SIZE, EMBED_DIM],
+sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim],
                         tf.float32, tf.ones_initializer)
 
 # Look up embeddings
@@ -76,51 +51,47 @@ context_sigmas = tf.nn.embedding_lookup(sigma, context_ids)
 negative_mus = tf.nn.embedding_lookup(mu, negative_ids)
 negative_sigmas = tf.nn.embedding_lookup(sigma, negative_ids)
 
-# Source: https://stackoverflow.com/a/40543116/10514795
-context_parameters = (context_mus, context_sigmas)
-negative_parameters = (negative_mus, negative_sigmas)
-positive_energy = tf.map_fn(
-    lambda params: expected_likelihood(center_mu, center_sigma,
-                                       params[0], params[1]),
-    context_parameters)  # [CONTEXT_SIZE, ]
-negative_energy = tf.map_fn(
-    lambda params: expected_likelihood(center_mu, center_sigma,
-                                       params[0], params[1]),
-    negative_parameters)  # [CONTEXT_SIZE, ]
+# Compute similarity (i.e. expected likelihood), max margin and loss
+coeff_pos = 1 / ((2*np.pi)**args.embed_dim
+                 * tf.reduce_prod(center_sigma + context_sigmas))
+quadform_pos = \
+    (center_mu - context_mus)**2 / (center_sigma + context_sigmas)**2
+positive_energies = coeff_pos * tf.exp(-0.5 * quadform_pos)
 
-max_margins = tf.maximum(0.0, MARGIN - positive_energy + negative_energy)
+coeff_neg = 1 / ((2*np.pi)**args.embed_dim
+                 * tf.reduce_prod(center_sigma + negative_sigmas))
+quadform_neg = \
+    (center_mu - negative_mus)**2 / (center_sigma + negative_sigmas)**2
+negative_energies = coeff_neg * tf.exp(-0.5 * quadform_neg)
+
+max_margins = tf.maximum(0.0,
+                         args.margin - positive_energies + negative_energies)
 loss = tf.reduce_mean(max_margins)
 
+# Minimize loss
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
+# Training
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
-iteration = 0
 
-while True:
-    try:
-        line = sess.run(next_line)
-    except tf.errors.OutOfRangeError:
-        print('End of dataset.')
-        break
+for _ in range(arg.num_epochs):
+    with open(args.data_file, 'r') as data_file:
+        for line in tqdm(data_file.readlines()):
+            # Evaluate string as python literal and convert to numpy array
+            context_ids_, negative_ids_, center_id_ = \
+                literal_eval(line.strip())
+            context_ids_, negative_ids_, center_id_ = \
+                map(np.array, [context_ids_, negative_ids_, center_id_])
 
-    # TODO (Jonny) need a function to get center, context and negative ids.
-    # next_sample may take whatever arguments needed.
-    center_id_, context_ids_, negative_ids_ = next_sample()
+            # Update
+            sess.run(train_step, feed_dict={center_id: center_id_,
+                                            context_ids: context_ids_,
+                                            negative_ids: negative_ids_})
 
-    # Train
-    sess.run(train_step, feed_dict={center_id: center_id_,
-                                    context_ids: context_ids_,
-                                    negative_ids: negative_ids_})
-
-    # Regularize means and covariance eigenvalues
-    mu = tf.clip_by_norm(mu, CLIP_NORM)
-    sigma = tf.maximum(MINIMUM, tf.minimum(MAXIMUM, sigma))
-
-    # Increment iteration, print if necessary
-    iteration += 1
-    if iteration % 1000 == 0:
-        print('Iteration: {}'.format(iteration))
+            # Regularize means and covariance eigenvalues
+            mu = tf.clip_by_norm(mu, args.C)
+            sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
