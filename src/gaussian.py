@@ -26,9 +26,10 @@ except IndexError:
     sys.exit()
 
 
+# FIXME (George) ensure that context_ids and negative_ids have the same shape
 center_id = tf.placeholder(tf.int32, [])
-context_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
-negative_ids = tf.placeholder(tf.int32, [CONTEXT_SIZE])
+context_ids = tf.placeholder(tf.int32, [None])
+negative_ids = tf.placeholder(tf.int32, [None])
 
 # Initialize embeddings
 mu = tf.get_variable('mu', [VOCAB_SIZE, EMBED_DIM],
@@ -69,9 +70,9 @@ sess.run(tf.global_variables_initializer())
 with open('sample_data.txt', 'r') as data_file:
     for line in tqdm(data_file.readlines()):
         # Evaluate string as python literal and convert to numpy array
-        context_ids, negative_ids, center_id = literal_eval(line.strip())
-        context_ids, negative_ids, center_id = \
-            map(np.array, [context_ids, negative_ids, center_id])
+        context_ids_, negative_ids_, center_id_ = literal_eval(line.strip())
+        context_ids_, negative_ids_, center_id_ = \
+            map(np.array, [context_ids_, negative_ids_, center_id_])
 
         # Train
         sess.run(train_step, feed_dict={center_id: center_id_,
