@@ -23,4 +23,3 @@ From the Gaussian Embedding paper:
 - [Word Representations via Gaussian Embedding](https://arxiv.org/abs/1412.6623)
 - [Multimodal Word Distributions](https://arxiv.org/abs/1704.08424)
 - [Expected Likelihood: Not a Good Metric for Gaussian Embeddings](https://ieeexplore.ieee.org/document/8356905)
-
