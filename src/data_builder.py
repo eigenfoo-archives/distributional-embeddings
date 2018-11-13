@@ -9,27 +9,24 @@ class Data:
             window,
             negative,
             data_file,
-            dictionary_pickle,
-            shuffled_file):
+            dictionary_pickle):
         self.window = window
         self.negative = negative
         self.data_file = open(data_file, "r")
         self.setence = []
         self.dictionary = pickle.load(open(dictionary_pickle, 'rb'))
+        self.dictionary_length = len(self.dictionary)
         self.non_word = -1
-        self.shuffled_file = open(shuffled_file, 'r')
         self.sentence_loc = 0
         hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
         if hold == '':
             raise Exception("file is finished, no more training data!")
         self.buffer = hold.split(".")
-        self.shuffled_buffer = self.shuffled_file.read(100000).split()
         self.end_buffer = len(self.buffer)
         self.sentenence_loc = 0
         self.location = 0
         self.sentence = self.buffer[0].split()
         self.sentence_length = len(self.sentence)
-        self.shuff_size = len(self.shuffled_buffer)
 
     def update_sentence(self):
         if self.sentence_loc == (self.end_buffer - 2):
@@ -37,13 +34,11 @@ class Data:
             if hold == '':
                 raise Exception("file is finished, no more training data!")
             self.buffer = hold.split(".")
-            self.shuffled_buffer = self.shuffled_file.read(100000).split()
             self.end_buffer = len(self.buffer)
             self.sentence_loc = 0
             self.location = 0
             self.sentence = self.buffer[0].split()
             self.sentence_length = len(self.sentence)
-            self.shuff_size = len(self.shuffled_buffer)
         if self.location == self.sentence_length:
             self.sentence_loc += 1
             self.sentence = self.buffer[self.sentence_loc].split()
@@ -65,10 +60,10 @@ class Data:
         pad = 0
         window_words = []
         if (start) < 0:
-            window_words = [self.non_word] * (self.window - self.location)
+            # window_words = [self.non_word] * (self.window - self.location)
             start = 0
         if end > self.sentence_length:
-            pad = end - self.sentence_length
+            # pad = end - self.sentence_length
             end = self.sentence_length
 
         for n in self.sentence[start:end]:
@@ -77,23 +72,21 @@ class Data:
                     window_words.append(self.dictionary[n])
             else:
                 window_words.append(self.non_word)
-        window_words += [self.non_word] * pad
+        # window_words += [self.non_word] * pad
         center_word = self.dictionary[self.sentence[self.location]]
         self.location += 1
-        shuff_choices = []
-        for choice in np.random.choice(
-                self.shuff_size,
-                self.negative,
-                replace=False):
-            shuff_choices.append(self.shuffled_buffer[choice])
-        negative_words = [self.dictionary[n] if n in self.dictionary
-                          else self.non_word
-                          for n in shuff_choices]
+        negative_indices = np.random.choice(self.dictionary_length, len(window_words),replace=False)
+        negative_words = []
+        for n in negative_indices: 
+            if n in window_words:
+                while n in window_words: 
+                    n = np.random.randint(self.dictionary_length)
+            negative_words.append(n)
         return window_words, negative_words, center_word
 
 
 data = Data(3, 5, "/home/jonny/Documents/mlfinal/data/data.txt",
-            "pickle.c", "/home/jonny/Documents/mlfinal/data/shuffled.txt")
+            "data.pkl")
 
-for i in range(1647734):
+for i in range(162):
     print(data.next_sample())
