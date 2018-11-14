@@ -15,18 +15,15 @@ class Data:
             size of window to look at the left and right of center word
         data_file: str
             name of file that contains all of the text
-        dictionary_pickle: str
-            name of pickle file that contains the dictionary that maps
-                word to id
     """
     def __init__(
             self,
             window,
             data_file,
-            dictionary_pickle):
+            thresh):
         self.window = window
         self.data_file = open(data_file, "r")
-        self.dictionary = pickle.load(open(dictionary_pickle, 'rb'))
+        self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
         self.dictionary_length = len(self.dictionary)
         # sentence_loc is the sentence within the buffer we are currently at
         self.sentence_loc = 0
@@ -39,7 +36,38 @@ class Data:
         self.location = 0
         self.sentence_words = self.buffer[0].split()
         self.sentence_length = len(self.sentence_words)
+    def _create_word_dict(self, text_file, pickle_name, thresh):
+        '''
+        Creates word_dict, whose key is a token (string), and whose
+        value is the integer id.
 
+        Parameters
+        ----------
+        text_file : str
+            Raw text file name.
+        pickle_name : str
+            Desired name of pickle file.
+        thresh : int
+            Words which appear fewer than `thresh` times are ignored.
+        '''
+        frequency_dict = {}
+        word_dict = {}
+        count = 0
+        with open(text_file, "r") as text:
+            for line in text:
+                # Replace multiple periods (e.g. ellipsis) with spaces.
+                words = re.sub(r"\.+", " ", line).split()
+                for word in words:
+                    if word in frequency_dict:
+                        frequency_dict[word] += 1
+                    else:
+                        frequency_dict[word] = 1
+        for word in frequency_dict:
+            if frequency_dict[word]>thresh:
+                word_dict[word] = count
+                count+=1
+        pickle.dump(word_dict, open(pickle_name, "wb"))
+        return word_dict
     def _update_sentence(self):
         """
           helper function for next_sample,
@@ -116,15 +144,15 @@ if __name__ == "__main__":
     """
      Usage:
        python data_builder.py <LOCATION OF TEXT FILE>
-        <LOCATION OF DICTIONARY PICKLE> <NUMBER OF SAMPLES DESIRED>
-        <OUTPUT FILE NAME> <WINDOW SIZE>
+        <NUMBER OF SAMPLES DESIRED> <OUTPUT FILE NAME>
+        <WINDOW SIZE> <THRESHOLD>
     """
     data_location = sys.argv[1]
-    pickle_location = sys.argv[2]
-    number_of_samples = sys.argv[3]
-    output_file = sys.argv[4]
-    window = int(sys.argv[5])
-    data = Data(window, data_location, pickle_location)
+    number_of_samples = sys.argv[2]
+    output_file = sys.argv[3]
+    window = int(sys.argv[4])
+    thresh = int(sys.argv[5])
+    data = Data(window, data_location,thresh)
     out = open(output_file, "w")
     for i in range(int(number_of_samples)):
         out.write("{}\n".format(data.next_sample()))
