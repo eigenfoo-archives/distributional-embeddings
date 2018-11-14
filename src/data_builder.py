@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 import re
-
+import sys
 
 class Data:
     def __init__(
@@ -71,22 +71,30 @@ class Data:
                 if n != word:
                     window_words.append(self.dictionary[n])
             else:
-                window_words.append(self.non_word)
-        # window_words += [self.non_word] * pad
+               # window_words.append(self.non_word)
+               pass
+       # window_words += [self.non_word] * pad
         center_word = self.dictionary[self.sentence[self.location]]
         self.location += 1
         negative_indices = np.random.choice(self.dictionary_length, len(window_words),replace=False)
         negative_words = []
-        for n in negative_indices: 
+        for n in negative_indices:
             if n in window_words:
-                while n in window_words: 
+                while n in window_words:
                     n = np.random.randint(self.dictionary_length)
             negative_words.append(n)
         return window_words, negative_words, center_word
 
 
-data = Data(3, 5, "/home/jonny/Documents/mlfinal/data/data.txt",
-            "data.pkl")
 
-for i in range(162):
-    print(data.next_sample())
+
+if __name__ == "__main__":
+    data_location  = sys.argv[1]
+    pickle_location = sys.argv[2]
+    number_of_samples = sys.argv[3]
+    output_file = sys.argv[4]
+    window = int(sys.argv[5])
+    data = Data(window,window, data_location,pickle_location)
+    out = open(output_file,"w")
+    for i in range(int(number_of_samples)):
+        out.write("{}\n".format(data.next_sample()))
