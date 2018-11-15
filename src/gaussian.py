@@ -76,7 +76,7 @@ loss = tf.reduce_mean(max_margins)
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
 # Regularize means and covariance eigenvalues
-with tf.control_dependencies([train_step]) as control_deps:
+with tf.control_dependencies([train_step]):
     clip_mu = tf.clip_by_norm(mu, args.C)
     bound_sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
 
@@ -87,7 +87,8 @@ sess.run(tf.global_variables_initializer())
 with open(args.data_file, 'r') as data_file:
     for _ in range(args.num_epochs):
         for line in tqdm(data_file.readlines()):
-            # Jon - I think readlines could slow us down with a big training file
+            # Jon - I think readlines could slow us down with a big training
+            # file
 
             line = data_file.readline()
             while line:
@@ -97,11 +98,11 @@ with open(args.data_file, 'r') as data_file:
                 context_ids_, negative_ids_, center_id_ = \
                     map(np.array, [context_ids_, negative_ids_, center_id_])
 
-            # Update
-            sess.run([train_step, clip_mu, bound_sigma],
-                     feed_dict={center_id: center_id_,
-                                context_ids: context_ids_,
-                                negative_ids: negative_ids_})
+                # Update
+                sess.run([train_step, clip_mu, bound_sigma],
+                         feed_dict={center_id: center_id_,
+                                    context_ids: context_ids_,
+                                    negative_ids: negative_ids_})
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
