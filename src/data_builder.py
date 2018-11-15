@@ -138,6 +138,10 @@ class Data:
         return window_words, negative_words, center_word
 
 
+def _int64_feature(value):
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+
+
 if __name__ == "__main__":
     """
     Usage:
@@ -150,7 +154,23 @@ if __name__ == "__main__":
     output_file = sys.argv[3]
     window = int(sys.argv[4])
     thresh = int(sys.argv[5])
+
+    writer = tf.python_io.TFRecordWriter(output_file)
+
     data = Data(window, data_location, thresh)
-    out = open(output_file, "w")
+    # out = open(output_file, "w")
     for i in range(int(number_of_samples)):
-        out.write("{}\n".format(data.next_sample()))
+        # out.write("{}\n".format(data.next_sample()))
+        context, negative, center = data.next_sample()
+
+        example = tf.train.Example(
+            features=tf.train.Features(
+                feature={'center': _int64_feature(center),
+                         'context': _int64_feature(context),
+                         'negative': _int64_feature(negative)}
+            )
+        )
+
+        writer.write(example.SerializeToString())
+
+    writer.close()
