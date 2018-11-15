@@ -117,11 +117,11 @@ class Data:
         """
         self._update_sentence()
         word = self.sentence_words[self.location]
+        start = self.location - self.window   
         while word not in self.dictionary:
             self.location += 1
             self._update_sentence()
             word = self.sentence_words[self.location]
-        start = self.location - self.window
         end = self.location + self.window + 1
         window_words = []
         pad = 0
