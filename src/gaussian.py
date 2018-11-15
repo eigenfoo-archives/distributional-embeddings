@@ -72,7 +72,7 @@ loss = tf.reduce_mean(max_margins)
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
 # Regularize means and covariance eigenvalues
-with tf.control_dependencies(train_step) as control_deps:
+with tf.control_dependencies([train_step]) as control_deps:
     clip_mu = tf.clip_by_norm(mu, args.C)
     bound_sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
 
@@ -80,7 +80,7 @@ with tf.control_dependencies(train_step) as control_deps:
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for _ in range(arg.num_epochs):
+for _ in range(args.num_epochs):
     with open(args.data_file, 'r') as data_file:
         for line in tqdm(data_file.readlines()):
             # Evaluate string as python literal and convert to numpy array
