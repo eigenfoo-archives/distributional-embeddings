@@ -71,6 +71,11 @@ loss = tf.reduce_mean(max_margins)
 # Minimize loss
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
+# Regularize means and covariance eigenvalues
+with tf.control_dependencies(train_step) as control_deps:
+    clip_mu = tf.clip_by_norm(mu, args.C)
+    bound_sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
+
 # Training
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -85,13 +90,10 @@ for _ in range(arg.num_epochs):
                 map(np.array, [context_ids_, negative_ids_, center_id_])
 
             # Update
-            sess.run(train_step, feed_dict={center_id: center_id_,
-                                            context_ids: context_ids_,
-                                            negative_ids: negative_ids_})
-
-            # Regularize means and covariance eigenvalues
-            mu = tf.clip_by_norm(mu, args.C)
-            sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
+            sess.run([train_step, clip_mu, bound_sigma],
+                     feed_dict={center_id: center_id_,
+                                context_ids: context_ids_,
+                                negative_ids: negative_ids_})
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
