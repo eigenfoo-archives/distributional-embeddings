@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import tensorflow as tf
 import re
 import sys
 
@@ -135,11 +136,11 @@ class Data:
                 while i in window_words or i == center_word:
                     i = np.random.randint(self.dictionary_length)
             negative_words.append(i)
-        return window_words, negative_words, center_word
+        return window_words, negative_words, [center_word]
 
 
-def _int32_feature(value):
-    return tf.train.Feature(int32_list=tf.train.Int32List(value=value))
+def _int64_feature(value):
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
 if __name__ == "__main__":
@@ -158,16 +159,14 @@ if __name__ == "__main__":
     writer = tf.python_io.TFRecordWriter(output_file)
 
     data = Data(window, data_location, thresh)
-    # out = open(output_file, "w")
     for i in range(int(number_of_samples)):
-        # out.write("{}\n".format(data.next_sample()))
         context, negative, center = data.next_sample()
 
         example = tf.train.Example(
             features=tf.train.Features(
-                feature={'center': _int32_feature(center),
-                         'context': _int32_feature(context),
-                         'negative': _int32_feature(negative)}
+                feature={'center': _int64_feature(center),
+                         'context': _int64_feature(context),
+                         'negative': _int64_feature(negative)}
             )
         )
 
