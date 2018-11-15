@@ -96,7 +96,6 @@ class Data:
         Responsible for getting the relevant inforamtion from the current
             position in the buffer and updating the pointers
 
-
         Returns
         ---------
             window_words: array of 2*window ints
@@ -141,10 +140,10 @@ class Data:
 
 if __name__ == "__main__":
     """
-     Usage:
-       python data_builder.py <LOCATION OF TEXT FILE>
-        <NUMBER OF SAMPLES DESIRED> <OUTPUT FILE NAME>
-        <WINDOW SIZE> <THRESHOLD>
+    Usage:
+      python data_builder.py <LOCATION OF TEXT FILE>
+       <NUMBER OF SAMPLES DESIRED> <OUTPUT FILE NAME>
+       <WINDOW SIZE> <THRESHOLD>
     """
     data_location = sys.argv[1]
     number_of_samples = sys.argv[2]
