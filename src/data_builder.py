@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import re
 import sys
-
+from tqdm import tqdm
 
 class Data:
     """
@@ -23,7 +23,10 @@ class Data:
             thresh):
         self.window = window
         self.data_file = open(data_file, "r")
-        self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
+        try:
+            self.dictionary = pickle.load(open("data.pkl", "rb"))
+        except:
+            self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
         self.dictionary_length = len(self.dictionary)
         # sentence_loc is the sentence within the buffer we are currently at
         self.sentence_loc = 0
@@ -36,6 +39,7 @@ class Data:
         self.location = 0
         self.sentence_words = self.buffer[0].split()
         self.sentence_length = len(self.sentence_words)
+        self.non_word = self.dictionary_length
     def _create_word_dict(self, text_file, pickle_name, thresh):
         '''
         Creates word_dict, whose key is a token (string), and whose
@@ -86,12 +90,13 @@ class Data:
             self.location = 0
             self.sentence_words = self.buffer[0].split()
             self.sentence_length = len(self.sentence_words)
-        if self.location == self.sentence_length:
+        if self.location >= self.sentence_length:
             self.sentence_loc += 1
             self.sentence_words = self.buffer[self.sentence_loc].split()
             self.sentence_length = len(self.sentence_words)
             self.location = 0
-
+        if self.sentence_length == 0:
+            self._update_sentence()
     def next_sample(self):
         """
             Responsible for getting the relevant inforamtion from the current
@@ -119,14 +124,20 @@ class Data:
         start = self.location - self.window
         end = self.location + self.window + 1
         window_words = []
+        pad = 0
         if (start) < 0:
+            window_words = [self.non_word] * (self.window - self.location)
             start = 0
         if end > self.sentence_length:
+            pad = end - self.sentence_length
             end = self.sentence_length
         for n in self.sentence_words[start:end]:
             if n in self.dictionary:
                 if n != word:
                     window_words.append(self.dictionary[n])
+            else:
+                window_words.append(self.non_word)
+        window_words += [self.non_word] * pad
         center_word = self.dictionary[word]
         self.location += 1
         negative_indices = np.random.choice(self.dictionary_length,
@@ -154,5 +165,5 @@ if __name__ == "__main__":
     thresh = int(sys.argv[5])
     data = Data(window, data_location,thresh)
     out = open(output_file, "w")
-    for i in range(int(number_of_samples)):
+    for i in tqdm(range(int(number_of_samples))):
         out.write("{}\n".format(data.next_sample()))

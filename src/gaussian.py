@@ -44,6 +44,8 @@ sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim],
 
 # Look up embeddings
 # FIXME (George) is there a better way of doing this?
+# Jonathan - Maybe you can stack the mu and sigma matricies
+
 center_mu = tf.nn.embedding_lookup(mu, center_id)
 center_sigma = tf.nn.embedding_lookup(sigma, center_id)
 context_mus = tf.nn.embedding_lookup(mu, context_ids)
@@ -77,7 +79,10 @@ sess.run(tf.global_variables_initializer())
 
 for _ in range(arg.num_epochs):
     with open(args.data_file, 'r') as data_file:
-        for line in tqdm(data_file.readlines()):
+        # Jon - I think readlines could slow us down with a big training file
+
+        line = data_file.readline()
+        while line:
             # Evaluate string as python literal and convert to numpy array
             context_ids_, negative_ids_, center_id_ = \
                 literal_eval(line.strip())
@@ -92,7 +97,7 @@ for _ in range(arg.num_epochs):
             # Regularize means and covariance eigenvalues
             mu = tf.clip_by_norm(mu, args.C)
             sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
-
+            line = data_file.readline()
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
 sigma_np = sigma.eval(session=sess)
