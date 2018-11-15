@@ -18,6 +18,8 @@ parser.add_argument('vocab_size', type=int,
                     help='Number of unique tokens in the vocabulary.')
 parser.add_argument('embed_dim', type=int,
                     help='Dimensionality of the embedding space.')
+parser.add_argument('batch_size', type=int, nargs='?', default=512,
+                    help='Batch size.')
 parser.add_argument('margin', type=float, nargs='?', default=1.0,
                     help='Margin in max-margin loss. Defaults to 1.')
 parser.add_argument('num_epochs', type=int, nargs='?', default=1,
