@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import re
 import sys
-
+from tqdm import tqdm
 
 class Data:
     """
@@ -23,7 +23,10 @@ class Data:
             thresh):
         self.window = window
         self.data_file = open(data_file, "r")
-        self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
+        try:
+            self.dictionary = pickle.load(open("data.pkl", "rb"))
+        except:
+            self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
         self.dictionary_length = len(self.dictionary)
         # sentence_loc is the sentence within the buffer we are currently at
         self.sentence_loc = 0
@@ -86,12 +89,13 @@ class Data:
             self.location = 0
             self.sentence_words = self.buffer[0].split()
             self.sentence_length = len(self.sentence_words)
-        if self.location == self.sentence_length:
+        if self.location >= self.sentence_length:
             self.sentence_loc += 1
             self.sentence_words = self.buffer[self.sentence_loc].split()
             self.sentence_length = len(self.sentence_words)
             self.location = 0
-
+        if self.sentence_length == 0:
+            self.update_sentence()
     def next_sample(self):
         """
             Responsible for getting the relevant inforamtion from the current
@@ -154,5 +158,5 @@ if __name__ == "__main__":
     thresh = int(sys.argv[5])
     data = Data(window, data_location,thresh)
     out = open(output_file, "w")
-    for i in range(int(number_of_samples)):
+    for i in tqdm(range(int(number_of_samples))):
         out.write("{}\n".format(data.next_sample()))
