@@ -95,7 +95,7 @@ class Data:
             self.sentence_length = len(self.sentence_words)
             self.location = 0
         if self.sentence_length == 0:
-            self.update_sentence()
+            self._update_sentence()
     def next_sample(self):
         """
             Responsible for getting the relevant inforamtion from the current
