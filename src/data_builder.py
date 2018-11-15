@@ -6,24 +6,21 @@ import sys
 
 class Data:
     """
-     Incrementally reads text from a file,
-     then iterates through sentences in that text.
+    Incrementally reads text from a file,
+    then iterates through sentences in that text.
 
-     Parameters
-     ----------
-        window : int
-            size of window to look at the left and right of center word
-        data_file: str
-            name of file that contains all of the text
+    Parameters
+    ----------
+       window : int
+           size of window to look at the left and right of center word
+       data_file: str
+           name of file that contains all of the text
     """
-    def __init__(
-            self,
-            window,
-            data_file,
-            thresh):
+
+    def __init__(self, window, data_file, thresh):
         self.window = window
         self.data_file = open(data_file, "r")
-        self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
+        self.dictionary = self._create_word_dict(data_file, "data.pkl", thresh)
         self.dictionary_length = len(self.dictionary)
         # sentence_loc is the sentence within the buffer we are currently at
         self.sentence_loc = 0
@@ -36,6 +33,7 @@ class Data:
         self.location = 0
         self.sentence_words = self.buffer[0].split()
         self.sentence_length = len(self.sentence_words)
+
     def _create_word_dict(self, text_file, pickle_name, thresh):
         '''
         Creates word_dict, whose key is a token (string), and whose
@@ -63,18 +61,19 @@ class Data:
                     else:
                         frequency_dict[word] = 1
         for word in frequency_dict:
-            if frequency_dict[word]>thresh:
+            if frequency_dict[word] > thresh:
                 word_dict[word] = count
-                count+=1
+                count += 1
         pickle.dump(word_dict, open(pickle_name, "wb"))
         return word_dict
+
     def _update_sentence(self):
         """
-          helper function for next_sample,
-             it checks if we are finished with the current sentence.
-             If we are it updates the sentence to the next sentence
-             in the buffer, if the buffer if finished it draws more
-             text.
+        Helper function for next_sample,
+           it checks if we are finished with the current sentence.
+           If we are it updates the sentence to the next sentence
+           in the buffer, if the buffer if finished it draws more
+           text.
         """
         if self.sentence_loc == (self.end_buffer_loc - 2):
             hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
@@ -94,21 +93,21 @@ class Data:
 
     def next_sample(self):
         """
-            Responsible for getting the relevant inforamtion from the current
-                position in the buffer and updating the pointers
+        Responsible for getting the relevant inforamtion from the current
+            position in the buffer and updating the pointers
 
 
-            Returns
-            ---------
-                window_words: array of 2*window ints
-                   an array of the ids corresponding to the words in the
-                   context of the center word
-                negative_words: array of 2*window ints
-                   an array of ids of negativly sampled words that are
-                   not in the window of the context word or the center
-                    word itself.
-                center_word: int
-                    the id corresponding to the center word
+        Returns
+        ---------
+            window_words: array of 2*window ints
+               an array of the ids corresponding to the words in the
+               context of the center word
+            negative_words: array of 2*window ints
+               an array of ids of negativly sampled words that are
+               not in the window of the context word or the center
+                word itself.
+            center_word: int
+                the id corresponding to the center word
         """
         self._update_sentence()
         word = self.sentence_words[self.location]
@@ -152,7 +151,7 @@ if __name__ == "__main__":
     output_file = sys.argv[3]
     window = int(sys.argv[4])
     thresh = int(sys.argv[5])
-    data = Data(window, data_location,thresh)
+    data = Data(window, data_location, thresh)
     out = open(output_file, "w")
     for i in range(int(number_of_samples)):
         out.write("{}\n".format(data.next_sample()))
