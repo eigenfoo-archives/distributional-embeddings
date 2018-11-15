@@ -138,8 +138,8 @@ class Data:
         return window_words, negative_words, center_word
 
 
-def _int64_feature(value):
-    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+def _int32_feature(value):
+    return tf.train.Feature(int32_list=tf.train.Int32List(value=value))
 
 
 if __name__ == "__main__":
@@ -165,9 +165,9 @@ if __name__ == "__main__":
 
         example = tf.train.Example(
             features=tf.train.Features(
-                feature={'center': _int64_feature(center),
-                         'context': _int64_feature(context),
-                         'negative': _int64_feature(negative)}
+                feature={'center': _int32_feature(center),
+                         'context': _int32_feature(context),
+                         'negative': _int32_feature(negative)}
             )
         )
 
