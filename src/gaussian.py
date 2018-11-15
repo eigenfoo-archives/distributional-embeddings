@@ -82,8 +82,8 @@ with tf.control_dependencies([train_step]) as control_deps:
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for _ in range(args.num_epochs):
-    with open(args.data_file, 'r') as data_file:
+with open(args.data_file, 'r') as data_file:
+    for _ in range(args.num_epochs):
         for line in tqdm(data_file.readlines()):
             # Evaluate string as python literal and convert to numpy array
             context_ids_, negative_ids_, center_id_ = \
