@@ -128,15 +128,18 @@ class Data:
         if (start) < 0:
             window_words = [self.non_word] * (self.window - self.location)
             start = 0
+        '''
         if end > self.sentence_length:
             pad = end - self.sentence_length
             end = self.sentence_length
+        '''
         for n in self.sentence_words[start:end]:
             if n in self.dictionary:
                 if n != word:
                     window_words.append(self.dictionary[n])
             else:
                 window_words.append(self.non_word)
+        pad = 2 * self.window - len(window_words)
         window_words += [self.non_word] * pad
         center_word = self.dictionary[word]
         self.location += 1
@@ -173,6 +176,9 @@ if __name__ == "__main__":
     data = Data(window, data_location, thresh)
     for i in range(int(number_of_samples)):
         context, negative, center = data.next_sample()
+
+        assert len(context) == 2*window
+        assert len(negative) == 2*window
 
         example = tf.train.Example(
             features=tf.train.Features(
