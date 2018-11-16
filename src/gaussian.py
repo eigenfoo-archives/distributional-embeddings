@@ -16,6 +16,8 @@ parser.add_argument('data_file', type=str,
                     help='Name of data file. Must be a TFRecord.')
 parser.add_argument('vocab_size', type=int,
                     help='Number of unique tokens in the vocabulary.')
+parser.add_argument('window_size', type=int,
+                    help='Window size (i.e. "diameter" of window).')
 parser.add_argument('embed_dim', type=int,
                     help='Dimensionality of the embedding space.')
 parser.add_argument('batch_size', type=int, nargs='?', default=512,
@@ -35,8 +37,8 @@ args = parser.parse_args()
 
 # FIXME (George) ensure that context_ids and negative_ids have the same shape
 center_id = tf.placeholder(tf.int32, [args.batch_size])
-context_ids = tf.placeholder(tf.int32, [args.batch_size, None])
-negative_ids = tf.placeholder(tf.int32, [args.batch_size, None])
+context_ids = tf.placeholder(tf.int32, [args.batch_size, args.window_size])
+negative_ids = tf.placeholder(tf.int32, [args.batch_size, args.window_size])
 
 # Data
 features = {
@@ -57,12 +59,14 @@ sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim],
                         tf.float32, tf.ones_initializer)
 
 # Look up embeddings
-center_mu = tf.nn.embedding_lookup(mu, center_id)
-center_sigma = tf.nn.embedding_lookup(sigma, center_id)
-context_mus = tf.nn.embedding_lookup(mu, context_ids)
-context_sigmas = tf.nn.embedding_lookup(sigma, context_ids)
-negative_mus = tf.nn.embedding_lookup(mu, negative_ids)
-negative_sigmas = tf.nn.embedding_lookup(sigma, negative_ids)
+# [BATCH_SIZE, EMBED_DIM, 1]
+center_mu = tf.expand_dims(tf.nn.embedding_lookup(mu, center_id), -1)
+center_sigma = tf.expand_dims(tf.nn.embedding_lookup(sigma, center_id), -1)
+# [BATCH_SIZE, EMBED_DIM, WINDOW_SIZE]
+context_mus = tf.linalg.transpose(tf.nn.embedding_lookup(mu, context_ids))
+context_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, context_ids))
+negative_mus = tf.linalg.transpose(tf.nn.embedding_lookup(mu, negative_ids))
+negative_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, negative_ids))
 
 # Compute similarity (i.e. expected likelihood), max margin and loss
 coeff_pos = 1 / ((2*np.pi)**args.embed_dim
