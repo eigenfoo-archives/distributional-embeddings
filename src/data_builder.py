@@ -174,7 +174,7 @@ if __name__ == "__main__":
     writer = tf.python_io.TFRecordWriter(output_file)
 
     data = Data(window, data_location, thresh)
-    for i in range(int(number_of_samples)):
+    for i in tqdm(range(int(number_of_samples))):
         context, negative, center = data.next_sample()
 
         assert len(context) == 2*window
