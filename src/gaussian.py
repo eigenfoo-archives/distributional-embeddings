@@ -18,6 +18,8 @@ parser.add_argument('vocab_size', type=int,
                     help='Number of unique tokens in the vocabulary.')
 parser.add_argument('embed_dim', type=int,
                     help='Dimensionality of the embedding space.')
+parser.add_argument('batch_size', type=int, nargs='?', default=512,
+                    help='Batch size.')
 parser.add_argument('margin', type=float, nargs='?', default=1.0,
                     help='Margin in max-margin loss. Defaults to 1.')
 parser.add_argument('num_epochs', type=int, nargs='?', default=1,
@@ -73,31 +75,35 @@ loss = tf.reduce_mean(max_margins)
 # Minimize loss
 train_step = tf.train.AdamOptimizer().minimize(loss)
 
+# Regularize means and covariance eigenvalues
+with tf.control_dependencies([train_step]):
+    clip_mu = tf.clip_by_norm(mu, args.C)
+    bound_sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
+
 # Training
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for _ in range(arg.num_epochs):
-    with open(args.data_file, 'r') as data_file:
-        # Jon - I think readlines could slow us down with a big training file
+with open(args.data_file, 'r') as data_file:
+    for _ in range(args.num_epochs):
+        for line in tqdm(data_file.readlines()):
+            # Jon - I think readlines could slow us down with a big training
+            # file
 
-        line = data_file.readline()
-        while line:
-            # Evaluate string as python literal and convert to numpy array
-            context_ids_, negative_ids_, center_id_ = \
-                literal_eval(line.strip())
-            context_ids_, negative_ids_, center_id_ = \
-                map(np.array, [context_ids_, negative_ids_, center_id_])
-
-            # Update
-            sess.run(train_step, feed_dict={center_id: center_id_,
-                                            context_ids: context_ids_,
-                                            negative_ids: negative_ids_})
-
-            # Regularize means and covariance eigenvalues
-            mu = tf.clip_by_norm(mu, args.C)
-            sigma = tf.maximum(args.m, tf.minimum(args.M, sigma))
             line = data_file.readline()
+            while line:
+                # Evaluate string as python literal and convert to numpy array
+                context_ids_, negative_ids_, center_id_ = \
+                    literal_eval(line.strip())
+                context_ids_, negative_ids_, center_id_ = \
+                    map(np.array, [context_ids_, negative_ids_, center_id_])
+
+                # Update
+                sess.run([train_step, clip_mu, bound_sigma],
+                         feed_dict={center_id: center_id_,
+                                    context_ids: context_ids_,
+                                    negative_ids: negative_ids_})
+
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
 sigma_np = sigma.eval(session=sess)
