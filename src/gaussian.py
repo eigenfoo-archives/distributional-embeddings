@@ -13,7 +13,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='Train Gaussian embeddings.')
 
 parser.add_argument('data_file', type=str,
-                    help='Name of data file.')
+                    help='Name of data file. Must be a TFRecord.')
 parser.add_argument('vocab_size', type=int,
                     help='Number of unique tokens in the vocabulary.')
 parser.add_argument('embed_dim', type=int,
@@ -34,9 +34,21 @@ parser.add_argument('M', type=float, nargs='?', default=1e3,
 args = parser.parse_args()
 
 # FIXME (George) ensure that context_ids and negative_ids have the same shape
-center_id = tf.placeholder(tf.int32, [])
-context_ids = tf.placeholder(tf.int32, [None])
-negative_ids = tf.placeholder(tf.int32, [None])
+center_id = tf.placeholder(tf.int32, [args.batch_size])
+context_ids = tf.placeholder(tf.int32, [args.batch_size, None])
+negative_ids = tf.placeholder(tf.int32, [args.batch_size, None])
+
+# Data
+features = {
+    'center': tf.FixedLenFeature([], tf.int64),
+    'context': tf.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+    'negative': tf.FixedLenSequenceFeature([], tf.int64, allow_missing=True)
+}
+dataset = (tf.data.TFRecordDataset([args.data_file])
+             .map(lambda x: tf.parse_single_example(x, features))
+             .batch(args.batch_size))
+iterator = dataset.make_one_shot_iterator()
+next_batch = iterator.get_next()
 
 # Initialize embeddings
 mu = tf.get_variable('mu', [args.vocab_size, args.embed_dim],
@@ -45,9 +57,6 @@ sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim],
                         tf.float32, tf.ones_initializer)
 
 # Look up embeddings
-# FIXME (George) is there a better way of doing this?
-# Jonathan - Maybe you can stack the mu and sigma matricies
-
 center_mu = tf.nn.embedding_lookup(mu, center_id)
 center_sigma = tf.nn.embedding_lookup(sigma, center_id)
 context_mus = tf.nn.embedding_lookup(mu, context_ids)
@@ -84,25 +93,12 @@ with tf.control_dependencies([train_step]):
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-with open(args.data_file, 'r') as data_file:
-    for _ in range(args.num_epochs):
-        for line in tqdm(data_file.readlines()):
-            # Jon - I think readlines could slow us down with a big training
-            # file
-
-            line = data_file.readline()
-            while line:
-                # Evaluate string as python literal and convert to numpy array
-                context_ids_, negative_ids_, center_id_ = \
-                    literal_eval(line.strip())
-                context_ids_, negative_ids_, center_id_ = \
-                    map(np.array, [context_ids_, negative_ids_, center_id_])
-
-                # Update
-                sess.run([train_step, clip_mu, bound_sigma],
-                         feed_dict={center_id: center_id_,
-                                    context_ids: context_ids_,
-                                    negative_ids: negative_ids_})
+for _ in range(args.num_epochs):
+    data = sess.run(next_batch)
+    sess.run([train_step, clip_mu, bound_sigma],
+             feed_dict={center_id: data['center'],
+                        context_ids: data['context'],
+                        negative_ids: data['negative']})
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
