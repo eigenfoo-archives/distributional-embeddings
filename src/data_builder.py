@@ -1,36 +1,38 @@
 import pickle
 import numpy as np
-import tensorflow as tf
 import re
 import sys
 from tqdm import tqdm
 
 class Data:
     """
-    Incrementally reads text from a file,
-    then iterates through sentences in that text.
+     Incrementally reads text from a file,
+     then iterates through sentences in that text.
 
-    Parameters
-    ----------
-       window : int
-           size of window to look at the left and right of center word
-       data_file: str
-           name of file that contains all of the text
+     Parameters
+     ----------
+        window : int
+            size of window to look at the left and right of center word
+        data_file: str
+            name of file that contains all of the text
     """
-
-    def __init__(self, window, data_file, thresh):
+    def __init__(
+            self,
+            window,
+            data_file,
+            thresh):
         self.window = window
         self.data_file = open(data_file, "r")
         try:
             self.dictionary = pickle.load(open("data.pkl", "rb"))
         except:
-            self.dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
+            self.(self, window, data_file, thresh)dictionary = self._create_word_dict(data_file,"data.pkl",thresh)
         self.dictionary_length = len(self.dictionary)
         # sentence_loc is the sentence within the buffer we are currently at
         self.sentence_loc = 0
         # here we are removing periods and also ellipsis,
         # following this all we have is text
-        hold = re.sub(r"\.+", ".", self.data_file.read(512)).strip()
+        hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
         self.buffer = hold.split(".")
         self.end_buffer_loc = len(self.buffer)
         # Location is the place within the sentence we are at
@@ -38,10 +40,6 @@ class Data:
         self.sentence_words = self.buffer[0].split()
         self.sentence_length = len(self.sentence_words)
         self.non_word = self.dictionary_length
-<<<<<<< HEAD
-=======
-
->>>>>>> ea4e22f3285417973b8f7ca5271f5c6c166cb330
     def _create_word_dict(self, text_file, pickle_name, thresh):
         '''
         Creates word_dict, whose key is a token (string), and whose
@@ -69,22 +67,21 @@ class Data:
                     else:
                         frequency_dict[word] = 1
         for word in frequency_dict:
-            if frequency_dict[word] > thresh:
+            if frequency_dict[word]>thresh:
                 word_dict[word] = count
-                count += 1
+                count+=1
         pickle.dump(word_dict, open(pickle_name, "wb"))
         return word_dict
-
     def _update_sentence(self):
         """
-        Helper function for next_sample,
-           it checks if we are finished with the current sentence.
-           If we are it updates the sentence to the next sentence
-           in the buffer, if the buffer if finished it draws more
-           text.
+          helper function for next_sample,
+             it checks if we are finished with the current sentence.
+             If we are it updates the sentence to the next sentence
+             in the buffer, if the buffer if finished it draws more
+             text.
         """
-        if self.sentence_loc >= (self.end_buffer_loc - 2):
-            hold = re.sub(r"\.+", ".", self.data_file.read(512)).strip()
+        if self.sentence_loc == (self.end_buffer_loc - 2):
+            hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
             if hold == '':
                 raise Exception("file is finished, no more training data!")
             self.buffer = hold.split(".")
@@ -100,30 +97,27 @@ class Data:
             self.location = 0
         if self.sentence_length == 0:
             self._update_sentence()
-<<<<<<< HEAD
-=======
-
->>>>>>> ea4e22f3285417973b8f7ca5271f5c6c166cb330
     def next_sample(self):
         """
-        Responsible for getting the relevant inforamtion from the current
-            position in the buffer and updating the pointers
+            Responsible for getting the relevant inforamtion from the current
+                position in the buffer and updating the pointers
 
-        Returns
-        ---------
-            window_words: array of 2*window ints
-               an array of the ids corresponding to the words in the
-               context of the center word
-            negative_words: array of 2*window ints
-               an array of ids of negativly sampled words that are
-               not in the window of the context word or the center
-                word itself.
-            center_word: int
-                the id corresponding to the center word
+
+            Returns
+            ---------
+                window_words: array of 2*window ints
+                   an array of the ids corresponding to the words in the
+                   context of the center word
+                negative_words: array of 2*window ints
+                   an array of ids of negativly sampled words that are
+                   not in the window of the context word or the center
+                    word itself.
+                center_word: int
+                    the id corresponding to the center word
         """
         self._update_sentence()
         word = self.sentence_words[self.location]
-        start = self.location - self.window   
+        start = self.location - self.window
         while word not in self.dictionary:
             self.location += 1
             self._update_sentence()
@@ -134,21 +128,15 @@ class Data:
         if (start) < 0:
             window_words = [self.non_word] * (self.window - self.location)
             start = 0
-        '''
         if end > self.sentence_length:
             pad = end - self.sentence_length
             end = self.sentence_length
-        '''
         for n in self.sentence_words[start:end]:
             if n in self.dictionary:
                 if n != word:
                     window_words.append(self.dictionary[n])
             else:
                 window_words.append(self.non_word)
-<<<<<<< HEAD
-=======
-        pad = 2 * self.window - len(window_words)
->>>>>>> ea4e22f3285417973b8f7ca5271f5c6c166cb330
         window_words += [self.non_word] * pad
         center_word = self.dictionary[word]
         self.location += 1
@@ -160,50 +148,22 @@ class Data:
                 while i in window_words or i == center_word:
                     i = np.random.randint(self.dictionary_length)
             negative_words.append(i)
-        return window_words, negative_words, [center_word]
-
-
-def _int64_feature(value):
-    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+        return window_words, negative_words, center_word
 
 
 if __name__ == "__main__":
     """
-    Usage:
-      python data_builder.py <LOCATION OF TEXT FILE>
-       <NUMBER OF SAMPLES DESIRED> <OUTPUT FILE NAME>
-       <WINDOW SIZE> <THRESHOLD>
+     Usage:
+       python data_builder.py <LOCATION OF TEXT FILE>
+        <NUMBER OF SAMPLES DESIRED> <OUTPUT FILE NAME>
+        <WINDOW SIZE> <THRESHOLD>
     """
     data_location = sys.argv[1]
     number_of_samples = sys.argv[2]
     output_file = sys.argv[3]
     window = int(sys.argv[4])
     thresh = int(sys.argv[5])
-<<<<<<< HEAD
     data = Data(window, data_location,thresh)
     out = open(output_file, "w")
     for i in tqdm(range(int(number_of_samples))):
         out.write("{}\n".format(data.next_sample()))
-=======
-
-    writer = tf.python_io.TFRecordWriter(output_file)
-
-    data = Data(window, data_location, thresh)
-    for i in tqdm(range(int(number_of_samples))):
-        context, negative, center = data.next_sample()
-
-        assert len(context) == 2*window
-        assert len(negative) == 2*window
-
-        example = tf.train.Example(
-            features=tf.train.Features(
-                feature={'center': _int64_feature(center),
-                         'context': _int64_feature(context),
-                         'negative': _int64_feature(negative)}
-            )
-        )
-
-        writer.write(example.SerializeToString())
-
-    writer.close()
->>>>>>> ea4e22f3285417973b8f7ca5271f5c6c166cb330
