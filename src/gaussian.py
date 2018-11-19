@@ -36,9 +36,9 @@ parser.add_argument('M', type=float, nargs='?', default=1e3,
 args = parser.parse_args()
 
 # FIXME (George) ensure that context_ids and negative_ids have the same shape
-center_id = tf.placeholder(tf.int32, [args.batch_size])
-context_ids = tf.placeholder(tf.int32, [args.batch_size, args.window_size])
-negative_ids = tf.placeholder(tf.int32, [args.batch_size, args.window_size])
+center_id = tf.placeholder(tf.int32, [None])
+context_ids = tf.placeholder(tf.int32, [None, args.window_size])
+negative_ids = tf.placeholder(tf.int32, [None, args.window_size])
 
 # Data
 features = {
@@ -49,6 +49,7 @@ features = {
 dataset = (tf.data.TFRecordDataset([args.data_file])
              .map(lambda x: tf.parse_single_example(x, features))
              .batch(args.batch_size))
+dataset = dataset.repeat()
 iterator = dataset.make_one_shot_iterator()
 next_batch = iterator.get_next()
 
