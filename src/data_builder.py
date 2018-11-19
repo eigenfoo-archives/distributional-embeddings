@@ -30,7 +30,7 @@ class Data:
         self.sentence_loc = 0
         # here we are removing periods and also ellipsis,
         # following this all we have is text
-        hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
+        hold = re.sub(r"\.+", ".", self.data_file.read(512)).strip()
         self.buffer = hold.split(".")
         self.end_buffer_loc = len(self.buffer)
         # Location is the place within the sentence we are at
@@ -80,8 +80,8 @@ class Data:
            in the buffer, if the buffer if finished it draws more
            text.
         """
-        if self.sentence_loc == (self.end_buffer_loc - 2):
-            hold = re.sub(r"\.+", ".", self.data_file.read(100000)).strip()
+        if self.sentence_loc >= (self.end_buffer_loc - 2):
+            hold = re.sub(r"\.+", ".", self.data_file.read(512)).strip()
             if hold == '':
                 raise Exception("file is finished, no more training data!")
             self.buffer = hold.split(".")
