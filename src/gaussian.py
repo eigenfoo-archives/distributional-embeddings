@@ -67,38 +67,46 @@ context_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, context_ids))
 negative_mus = tf.linalg.transpose(tf.nn.embedding_lookup(mu, negative_ids))
 negative_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, negative_ids))
 
+'''
 # Compute log expected likelihood
-logdet_pos = tf.reduce_prod(center_sigma + context_sigmas, axis=1)
+logdet_pos = tf.log(tf.reduce_prod(center_sigma + context_sigmas, axis=1))
 quadform_pos = tf.reduce_sum(
     (center_mu - context_mus)**2 / (center_sigma + context_sigmas),
     axis=1
 )
-log_positive_energies = -0.5 * (logdet_pos + quadform_pos)
+log_positive_energies = -0.5 * (logdet_pos + quadform_pos
+                                + args.embed_dim*np.log(2*np.pi))
 positive_energies = tf.exp(log_positive_energies)
 
-logdet_neg = tf.reduce_prod(center_sigma + negative_sigmas, axis=1)
+logdet_neg = tf.log(tf.reduce_prod(center_sigma + negative_sigmas, axis=1))
 quadform_neg = tf.reduce_sum(
     (center_mu - negative_mus)**2 / (center_sigma + negative_sigmas),
     axis=1
 )
-log_negative_energies = -0.5 * (logdet_neg + quadform_neg)
+log_negative_energies = -0.5 * (logdet_neg + quadform_neg
+                                + args.embed_dim*np.log(2*np.pi))
 negative_energies = tf.exp(log_negative_energies)
-
 '''
-# TODO Compute KL
+
+# Compute KL
 trace_pos = tf.reduce_sum(1/context_sigmas * center_sigma, axis=1)
-quadform_pos = (context_mus - center_mu)**2 / (context_sigmas)**2
+quadform_pos = tf.reduce_sum(
+    (context_mus - center_mu)**2 / (context_sigmas),
+    axis=1
+)
 logdet_pos = tf.log(
     tf.reduce_prod(context_sigmas, axis=1) / tf.reduce_prod(center_sigma)
 )
-import pdb; pdb.set_trace()
 positive_energies = 0.5 * (trace_pos
                            + quadform_pos
                            - args.embed_dim
                            - logdet_pos)
 
 trace_neg = tf.reduce_sum(1/negative_sigmas * center_sigma, axis=1)
-quadform_neg = (negative_mus - center_mu)**2 / (negative_sigmas)**2
+quadform_neg = tf.reduce_sum(
+    (negative_mus - center_mu)**2 / (negative_sigmas),
+    axis=1
+)
 logdet_neg = tf.log(
     tf.reduce_prod(negative_sigmas, axis=1) / tf.reduce_prod(center_sigma)
 )
@@ -106,7 +114,6 @@ negative_energies = 0.5 * (trace_neg
                            + quadform_neg
                            - args.embed_dim
                            - logdet_neg)
-'''
 
 max_margins = tf.maximum(0.0,
                          args.margin
