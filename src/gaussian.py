@@ -82,8 +82,8 @@ quadform_neg = \
     (center_mu - negative_mus)**2 / (center_sigma + negative_sigmas)**2
 negative_energies = coeff_neg * tf.exp(-0.5 * quadform_neg)
 
-# TODO Compute KL
 '''
+# TODO Compute KL
 trace_pos = tf.reduce_sum(1/context_sigmas * center_sigma, axis=1)
 quadform_pos = (context_mus - center_mu)**2 / (context_sigmas)**2
 logdet_pos = tf.log(
@@ -107,7 +107,9 @@ negative_energies = 0.5 * (trace_neg
 '''
 
 max_margins = tf.maximum(0.0,
-                         args.margin - positive_energies + negative_energies)
+                         args.margin
+                         - log_positive_energies
+                         + log_negative_energies)
 loss = tf.reduce_mean(max_margins)
 
 # Minimize loss
