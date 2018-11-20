@@ -35,7 +35,6 @@ parser.add_argument('M', type=float, nargs='?', default=1e3,
 
 args = parser.parse_args()
 
-# FIXME (George) ensure that context_ids and negative_ids have the same shape
 center_id = tf.placeholder(tf.int32, [None])
 context_ids = tf.placeholder(tf.int32, [None, args.window_size])
 negative_ids = tf.placeholder(tf.int32, [None, args.window_size])
