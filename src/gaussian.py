@@ -133,12 +133,14 @@ with tf.control_dependencies([train_step]):
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for _ in range(args.num_epochs):
+for i in range(args.num_epochs):
     data = sess.run(next_batch)
-    sess.run([train_step, clip_mu, bound_sigma],
-             feed_dict={center_id: data['center'],
-                        context_ids: data['context'],
-                        negative_ids: data['negative']})
+    foo, _, _, _ = \
+        sess.run([loss, train_step, clip_mu, bound_sigma],
+                 feed_dict={center_id: data['center'],
+                            context_ids: data['context'],
+                            negative_ids: data['negative']})
+    print(foo)
 
 # Save embedding parameters as .npy files
 mu_np = mu.eval(session=sess)
