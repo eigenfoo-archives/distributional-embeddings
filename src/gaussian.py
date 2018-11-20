@@ -25,8 +25,8 @@ parser.add_argument('batch_size', type=int, nargs='?', default=512,
                     help='Batch size.')
 parser.add_argument('margin', type=float, nargs='?', default=1.0,
                     help='Margin in max-margin loss. Defaults to 1.')
-parser.add_argument('num_epochs', type=int, nargs='?', default=100,
-                    help='Number of epochs. Defaults to 100.')
+parser.add_argument('num_epochs', type=int, nargs='?', default=500,
+                    help='Number of epochs. Defaults to 500.')
 parser.add_argument('C', type=float, nargs='?', default=100.0,
                     help='Maximum L2 norm of mu. Defaults to 100.')
 parser.add_argument('m', type=float, nargs='?', default=1e-2,
@@ -54,10 +54,10 @@ iterator = dataset.make_one_shot_iterator()
 next_batch = iterator.get_next()
 
 # Initialize embeddings
-mu = tf.get_variable('mu', [args.vocab_size, args.embed_dim],
-                     tf.float32, tf.random_normal_initializer)
-sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim],
-                        tf.float32, tf.ones_initializer)
+mu = tf.get_variable('mu', [args.vocab_size, args.embed_dim], tf.float32,
+                     tf.random_normal_initializer)
+sigma = tf.get_variable('sigma', [args.vocab_size, args.embed_dim], tf.float32,
+                        tf.keras.initializers.Constant(0.5))
 
 # Look up embeddings
 # [BATCH_SIZE, EMBED_DIM, 1]
@@ -76,6 +76,7 @@ quadform_pos = tf.reduce_sum(
     axis=1
 )
 log_positive_energies = -0.5 * (logdet_pos + quadform_pos)
+positive_energies = tf.exp(log_positive_energies)
 
 logdet_neg = tf.reduce_prod(center_sigma + negative_sigmas, axis=1)
 quadform_neg = tf.reduce_sum(
@@ -83,6 +84,7 @@ quadform_neg = tf.reduce_sum(
     axis=1
 )
 log_negative_energies = -0.5 * (logdet_neg + quadform_neg)
+negative_energies = tf.exp(log_negative_energies)
 
 '''
 # TODO Compute KL
@@ -110,8 +112,8 @@ negative_energies = 0.5 * (trace_neg
 
 max_margins = tf.maximum(0.0,
                          args.margin
-                         - log_positive_energies
-                         + log_negative_energies)
+                         - positive_energies
+                         + negative_energies)
 loss = tf.reduce_mean(max_margins)
 
 # Minimize loss
