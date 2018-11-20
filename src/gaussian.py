@@ -15,7 +15,8 @@ parser = argparse.ArgumentParser(description='Train Gaussian embeddings.')
 parser.add_argument('data_file', type=str,
                     help='Name of data file. Must be a TFRecord.')
 parser.add_argument('vocab_size', type=int,
-                    help='Number of unique tokens in the vocabulary.')
+                    help=('Number of unique tokens in the vocabulary. Must '
+                          'include the not-a-word token!'))
 parser.add_argument('window_size', type=int,
                     help='Window size (i.e. "diameter" of window).')
 parser.add_argument('embed_dim', type=int,
@@ -24,8 +25,8 @@ parser.add_argument('batch_size', type=int, nargs='?', default=512,
                     help='Batch size.')
 parser.add_argument('margin', type=float, nargs='?', default=1.0,
                     help='Margin in max-margin loss. Defaults to 1.')
-parser.add_argument('num_epochs', type=int, nargs='?', default=1,
-                    help='Number of epochs. Defaults to 1.')
+parser.add_argument('num_epochs', type=int, nargs='?', default=100,
+                    help='Number of epochs. Defaults to 100.')
 parser.add_argument('C', type=float, nargs='?', default=20.0,
                     help='Maximum L2 norm of mu. Defaults to 20.')
 parser.add_argument('m', type=float, nargs='?', default=1e-3,
@@ -68,7 +69,7 @@ context_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, context_ids))
 negative_mus = tf.linalg.transpose(tf.nn.embedding_lookup(mu, negative_ids))
 negative_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, negative_ids))
 
-# Compute similarity (i.e. expected likelihood), max margin and loss
+# Compute expected likelihood
 coeff_pos = 1 / ((2*np.pi)**args.embed_dim
                  * tf.reduce_prod(center_sigma + context_sigmas))
 quadform_pos = \
