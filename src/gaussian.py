@@ -27,12 +27,12 @@ parser.add_argument('margin', type=float, nargs='?', default=1.0,
                     help='Margin in max-margin loss. Defaults to 1.')
 parser.add_argument('num_epochs', type=int, nargs='?', default=100,
                     help='Number of epochs. Defaults to 100.')
-parser.add_argument('C', type=float, nargs='?', default=20.0,
-                    help='Maximum L2 norm of mu. Defaults to 20.')
-parser.add_argument('m', type=float, nargs='?', default=1e-3,
-                    help='Minimum covariance eigenvalue. Defaults to 1e-3.')
-parser.add_argument('M', type=float, nargs='?', default=1e3,
-                    help='Maximum covariance eigenvalue. Defaults to 1e3.')
+parser.add_argument('C', type=float, nargs='?', default=100.0,
+                    help='Maximum L2 norm of mu. Defaults to 100.')
+parser.add_argument('m', type=float, nargs='?', default=1e-2,
+                    help='Minimum covariance eigenvalue. Defaults to 1e-2.')
+parser.add_argument('M', type=float, nargs='?', default=1e2,
+                    help='Maximum covariance eigenvalue. Defaults to 1e2.')
 
 args = parser.parse_args()
 
