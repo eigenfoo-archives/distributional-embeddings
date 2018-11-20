@@ -21,9 +21,9 @@ parser.add_argument('embed_dim', type=int,
                     help='Dimensionality of the embedding space.')
 parser.add_argument('batch_size', type=int, nargs='?', default=512,
                     help='Batch size.')
-parser.add_argument('margin', type=float, nargs='?', default=1.0,
-                    help='Margin in max-margin loss. Defaults to 1.')
-parser.add_argument('num_epochs', type=int, nargs='?', default=500,
+parser.add_argument('margin', type=float, nargs='?', default=2.0,
+                    help='Margin in max-margin loss. Defaults to 2.')
+parser.add_argument('num_epochs', type=int, nargs='?', default=100,
                     help='Number of epochs. Defaults to 500.')
 parser.add_argument('C', type=float, nargs='?', default=100.0,
                     help='Maximum L2 norm of mu. Defaults to 100.')
