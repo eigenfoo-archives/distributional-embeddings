@@ -6,8 +6,6 @@ Implementation of Word Representations via Gaussian Embedding.
 import argparse
 import numpy as np
 import tensorflow as tf
-from ast import literal_eval
-from tqdm import tqdm
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Train Gaussian embeddings.')
