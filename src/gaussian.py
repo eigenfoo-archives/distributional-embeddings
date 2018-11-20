@@ -69,18 +69,20 @@ context_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, context_ids))
 negative_mus = tf.linalg.transpose(tf.nn.embedding_lookup(mu, negative_ids))
 negative_sigmas = tf.linalg.transpose(tf.nn.embedding_lookup(sigma, negative_ids))
 
-# Compute expected likelihood
-coeff_pos = 1 / ((2*np.pi)**args.embed_dim
-                 * tf.reduce_prod(center_sigma + context_sigmas))
-quadform_pos = \
-    (center_mu - context_mus)**2 / (center_sigma + context_sigmas)**2
-positive_energies = coeff_pos * tf.exp(-0.5 * quadform_pos)
+# Compute log expected likelihood
+logdet_pos = tf.reduce_prod(center_sigma + context_sigmas, axis=1)
+quadform_pos = tf.reduce_sum(
+    (center_mu - context_mus)**2 / (center_sigma + context_sigmas),
+    axis=1
+)
+log_positive_energies = -0.5 * (logdet_pos + quadform_pos)
 
-coeff_neg = 1 / ((2*np.pi)**args.embed_dim
-                 * tf.reduce_prod(center_sigma + negative_sigmas))
-quadform_neg = \
-    (center_mu - negative_mus)**2 / (center_sigma + negative_sigmas)**2
-negative_energies = coeff_neg * tf.exp(-0.5 * quadform_neg)
+logdet_neg = tf.reduce_prod(center_sigma + negative_sigmas, axis=1)
+quadform_neg = tf.reduce_sum(
+    (center_mu - negative_mus)**2 / (center_sigma + negative_sigmas),
+    axis=1
+)
+log_negative_energies = -0.5 * (logdet_neg + quadform_neg)
 
 '''
 # TODO Compute KL
